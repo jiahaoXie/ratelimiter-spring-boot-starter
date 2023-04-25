@@ -1,5 +1,21 @@
 # ratelimiter-spring-boot-starter
+## 前言(by bryant)
+此项目的原项目工程在https://github.com/taptap/ratelimiter-spring-boot-starter,
+该项目使用redis+lua实现一个分布式限流的sping-boot-starter 封装器，redis使用redisson实现代码逻辑,AOP拦截的方式，gradle进行相关以来加载
+源代码核心的几个点如下：
+* build.gradle 引入必要的依赖
+* 构建RateLimit注解 com.taptap.ratelimiter.annotation.RateLimit
+    * 作者考虑了时间表达式，限流后的自定义回退后的拒绝逻辑, 用户自定义Key（PS：这里其实可以加一些默认的Key生成策略，比如按照方法策略， 按照方法&IP 策略, 按照自定义策略等，默认为按照方法）
+* AOP切面(@Around(value = "@annotation(rateLimit)") 对有注解rateLimit 执行切面环绕) com.taptap.ratelimiter.core.RateLimitAspectHandler
+    * around环绕方式， 通过定义RateLimiterService获取方法注解的信息，存放在为RateLimiterInfo
+    * 如果还定义了回调方法，被限流后还会执行回调方法，回调方法也在RateLimiterService中。
+* 加载Lua脚本 com.taptap.ratelimiter.model.LuaScript
+    * 限流算法有：时间窗口 令牌桶
+* 实现starter自动装配 RateLimiterAutoConfiguration + RateLimiterProperties + spring.factories
+* 压测qps
+    * 启动 src/test/java/com/taptap/ratelimiter/Application.java 后，访问 http://localhost:8080/swagger-ui.html
 
+## 正文
 基于 redis 的偏业务应用的分布式限流组件，目前支持`时间窗口`、`令牌桶`
 两种限流算法。使得项目拥有分布式限流能力变得很简单。限流的场景有很多，常说的限流一般指网关限流，控制好洪峰流量，以免打垮后方应用。这里突出`偏业务应用的分布式限流`
 的原因，是因为区别于网关限流，业务侧限流可以轻松根据业务性质做到细粒度的流量控制。比如如下场景，
